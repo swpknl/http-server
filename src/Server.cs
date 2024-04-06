@@ -37,12 +37,21 @@ void AcceptClient(IAsyncResult ar, string[] args)
     {
         Console.WriteLine(directory);
         var file = data.Replace("/file/", string.Empty);
-        var filePath = Path.Combine(directory, file);
         try
         {
-            var fileInfo = new FileInfo(filePath);
-            var fileData = File.ReadAllText(fileInfo.FullName);
-            result = $"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileData.Length}\r\n\r\n{fileData}";
+            var directoryInfo = new DirectoryInfo(directory);
+            if (directoryInfo.Exists)
+            {
+                var filePath = Path.Combine(directory, file);
+                var fileInfo = new FileInfo(filePath);
+                var fileData = File.ReadAllText(fileInfo.FullName);
+                result = $"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileData.Length}\r\n\r\n{fileData}";
+            }
+            else
+            {
+                var echoed = "test";
+                result = $"HTTP/1.1 404 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+            }
         }
         catch (Exception e)
         {
