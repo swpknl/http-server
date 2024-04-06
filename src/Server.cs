@@ -70,7 +70,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
                 var fileDataToWrite = request.Split("\r\n").Last();
                 var directoryInfo = new DirectoryInfo(directory);
                 var filePath = Path.Combine(directory, file);
-                var fileData = File.ReadAllText(filePath);
+                File.WriteAllText(filePath, fileDataToWrite);
                 result =
                     $"HTTP/1.1 201 Created\r\n";
             }
