@@ -67,6 +67,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         {
             string requestBody = request.Split("\r\n\r\n")[1].TrimEnd();
             requestBody = requestBody.Replace("\0", string.Empty);
+            requestBody = requestBody.Trim();
             Console.WriteLine(requestBody);
             string filename = data.Split("/files/")[1];
             var file = Path.Combine(directory, filename);
