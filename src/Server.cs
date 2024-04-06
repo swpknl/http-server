@@ -72,8 +72,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
                 if (directoryInfo.Exists)
                 {
                     var filePath = Path.Combine(directory, file);
-                    var fileInfo = new FileInfo(filePath);
-                    var fileData = File.ReadAllText(fileInfo.FullName);
+                    var fileData = File.ReadAllText(filePath);
                     result =
                         $"HTTP/1.1 201 Created\r\n";
                 }
@@ -81,8 +80,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
                 {
                     Directory.CreateDirectory(directory);
                     var filePath = Path.Combine(directory, file);
-                    var fileInfo = new FileInfo(filePath);
-                    File.WriteAllText(fileInfo.FullName, fileDataToWrite);
+                    File.WriteAllText(filePath, fileDataToWrite);
                     result =
                         $"HTTP/1.1 201 Created\r\n";
                 }
