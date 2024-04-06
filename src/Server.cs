@@ -28,9 +28,9 @@ void AcceptClient(IAsyncResult ar, string[] args)
     var data = request.Split(" ")[1];
     string result = string.Empty;
     string directory = "";
-    if (args != null && args.Length == 1)
+    if (args != null && args.Length == 2)
     {
-        directory = args[0];
+        directory = args[1];
     }
 
     if (data.StartsWith("/file"))
