@@ -35,7 +35,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
 
     if (data.StartsWith("/file"))
     {
-        Console.WriteLine(request);
+        Console.WriteLine(directory);
         var file = data.Replace("/file/", string.Empty);
         var filePath = Path.Combine(directory, file);
         try
@@ -46,6 +46,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         }
         catch (Exception e)
         {
+            Console.WriteLine("In exception");
             result = "HTTP/1.1 404 OK\r\n\r\n";
         }
     }
