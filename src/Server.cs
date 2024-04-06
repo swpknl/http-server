@@ -64,7 +64,25 @@ void AcceptClient(IAsyncResult ar, string[] args)
         }
         else
         {
-            Console.WriteLine("Post");
+            var file = data.Replace("/files/", string.Empty);
+            var fileDataToWrite = request.Split("\r\n").Last();
+            var directoryInfo = new DirectoryInfo(directory);
+            if (directoryInfo.Exists)
+            {
+                var filePath = Path.Combine(directory, file);
+                var fileInfo = new FileInfo(filePath);
+                var fileData = File.ReadAllText(fileInfo.FullName);
+                result =
+                    $"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileData.Length}\r\n\r\n{fileData}";
+            }
+            else
+            {
+                Directory.CreateDirectory(directory);
+                var filePath = Path.Combine(directory, file);
+                File.WriteAllText(filePath, fileDataToWrite);
+                result =
+                    $"HTTP/1.1 201 Created\r\n";
+            }
         }
     }
     else if (data.StartsWith("/echo"))
