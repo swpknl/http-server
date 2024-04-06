@@ -67,7 +67,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         {
             string requestBody = request.Split("\r\n\r\n")[1].TrimEnd();
             requestBody = requestBody.Replace("\0", string.Empty);
-            requestBody = requestBody.Trim(new char[] { '\uFEFF', '\u200B' });
+            requestBody = RemoveBom(requestBody);
             Console.WriteLine(requestBody);
             string filename = data.Split("/files/")[1];
             var file = Path.Combine(directory, filename);
@@ -111,4 +111,12 @@ void AcceptClient(IAsyncResult ar, string[] args)
     socket.Send(bytes);
     //server.EndAcceptSocket(ar);
     Console.ReadLine();
+}
+
+string RemoveBom(string p)
+{
+    string BOMMarkUtf8 = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
+    if (p.StartsWith(BOMMarkUtf8, StringComparison.Ordinal))
+        p = p.Remove(0, BOMMarkUtf8.Length);
+    return p.Replace("\0", "");
 }
