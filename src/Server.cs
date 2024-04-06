@@ -36,7 +36,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
     if (data.StartsWith("/file"))
     {
         Console.WriteLine(directory);
-        var file = data.Replace("/file/", string.Empty);
+        var file = data.Replace("/files/", string.Empty);
         try
         {
             var directoryInfo = new DirectoryInfo(directory);
