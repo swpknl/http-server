@@ -9,14 +9,20 @@ using System.Linq;
 Console.WriteLine("Logs from your program will appear here!");
 
 // Uncomment this block to pass the first stage
+
 TcpListener server = new TcpListener(IPAddress.Any, 4221);
 server.Start();
-server.BeginAcceptSocket(ar => AcceptClient(ar), null); // wait for client
+while (true)
+{
+    server.BeginAcceptSocket(ar => AcceptClient(ar), server); // wait for client    
+}
+
 
 void AcceptClient(IAsyncResult ar)
 {
     var buffer = new byte[1024];
-    Socket socket = (Socket)ar.AsyncState;
+    var listener = (TcpListener)ar.AsyncState;
+    var socket = listener.EndAcceptSocket(ar);
     var received = socket.Receive(buffer);
     var request = Encoding.UTF8.GetString(buffer);
     var data = request.Split(" ")[1];
@@ -47,6 +53,6 @@ void AcceptClient(IAsyncResult ar)
 
     var bytes = Encoding.UTF8.GetBytes(result);
     socket.Send(bytes);
-    server.EndAcceptSocket(ar);
+    //server.EndAcceptSocket(ar);
     Console.ReadLine();
 }
