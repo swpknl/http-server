@@ -10,6 +10,6 @@ TcpListener server = new TcpListener(IPAddress.Any, 4221);
 server.Start();
 var socket = server.AcceptSocket(); // wait for client
 var buffer = new ArraySegment<byte>();
-var data = await socket.ReceiveAsync(buffer, SocketFlags.None);
+//var data = socket.Receive(buffer, SocketFlags.None);
 var result = "HTTP/1.1 200 OK\\r\\n\\r\\n";
 await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(result.ToCharArray())), SocketFlags.None);
