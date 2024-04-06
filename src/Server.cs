@@ -15,9 +15,9 @@ var buffer = new byte[1024];
 var received = socket.Receive(buffer);
 var data = Encoding.UTF8.GetString(buffer).Split(" ")[1];
 string result = string.Empty;
-if (data.StartsWith("echo"))
+if (data.StartsWith("/echo"))
 {
-    var echoed = data.Split("/")[1];
+    var echoed = data.Replace("/echo", string.Empty);
     result = $"HTTP/1.1 200 OK\r\n\r\nContent-Type: text/plain\r\n\r\nContent-Length: {echoed.Length}\r\n\r\n\r\n\r\n{echoed}";
 }
 else
