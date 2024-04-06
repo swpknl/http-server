@@ -64,8 +64,6 @@ void AcceptClient(IAsyncResult ar, string[] args)
         }
         else
         {
-            try
-            {
                 var file = data.Replace("/files/", string.Empty);
                 var fileDataToWrite = request.Split("\r\n").Last();
                 var directoryInfo = new DirectoryInfo(directory);
@@ -73,13 +71,6 @@ void AcceptClient(IAsyncResult ar, string[] args)
                 File.WriteAllText(filePath, fileDataToWrite);
                 result =
                     $"HTTP/1.1 201 Created\r\n";
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                result =
-                    $"HTTP/1.1 201 Created\r\n";
-            }
         }
     }
     else if (data.StartsWith("/echo"))
