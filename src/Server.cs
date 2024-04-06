@@ -72,6 +72,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
             var fileInfo = new FileInfo(file);
             if (fileInfo.Exists)
             {
+                Console.WriteLine("File Exists");
                 File.Delete(fileInfo.FullName);
             }
             File.WriteAllText(fileInfo.FullName, requestBody, Encoding.UTF8);
