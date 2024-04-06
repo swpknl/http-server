@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.IO;
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
@@ -64,10 +65,10 @@ void AcceptClient(IAsyncResult ar, string[] args)
         }
         else
         {
-            var file = data.Replace("/files/", string.Empty);
-            var fileDataToWrite = request.Split("\r\n").Last().TrimEnd();
-            Console.WriteLine(fileDataToWrite);
-            File.WriteAllBytes(Path.Combine(directory, file), Encoding.UTF8.GetBytes(fileDataToWrite));
+            string requestBody = request.Split("\r\n\r\n")[1];
+            string filename = data.Split("/files/")[1];
+            File.WriteAllText(Path.Combine(directory, filename), requestBody);
+            //File.WriteAllBytes(Path.Combine(directory, file), Encoding.UTF8.GetBytes(fileDataToWrite));
             result =
                 $"HTTP/1.1 201 Created\r\n\r\n";
         }
