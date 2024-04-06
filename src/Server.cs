@@ -79,7 +79,8 @@ void AcceptClient(IAsyncResult ar, string[] args)
             {
                 Directory.CreateDirectory(directory);
                 var filePath = Path.Combine(directory, file);
-                File.WriteAllText(filePath, fileDataToWrite);
+                var fileInfo = new FileInfo(filePath);
+                File.WriteAllText(fileInfo.FullName, fileDataToWrite);
                 result =
                     $"HTTP/1.1 201 Created\r\n";
             }
