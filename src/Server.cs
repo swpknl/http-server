@@ -65,7 +65,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         else
         {
             var file = data.Replace("/files/", string.Empty);
-            var fileDataToWrite = request.Split("\r\n").Last();
+            var fileDataToWrite = request.Split("\r\n").Last().TrimEnd();
             File.WriteAllBytes(Path.Combine(directory, file), Encoding.UTF8.GetBytes(fileDataToWrite));
             result =
                 $"HTTP/1.1 201 Created\r\n\r\n";
