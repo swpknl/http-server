@@ -64,9 +64,9 @@ void AcceptClient(IAsyncResult ar, string[] args)
         }
         else
         {
-            Console.WriteLine("In post");
             var file = data.Replace("/files/", string.Empty);
             var fileDataToWrite = request.Split("\r\n").Last();
+            Console.WriteLine(fileDataToWrite);
             File.WriteAllText(Path.Combine(directory, file), fileDataToWrite);
             result =
                 $"HTTP/1.1 201 Created\r\n\r\n";
