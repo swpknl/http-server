@@ -66,7 +66,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         {
                 var file = data.Replace("/files/", string.Empty);
                 var fileDataToWrite = request.Split("\r\n").Last();
-                var directoryInfo = new DirectoryInfo(directory);
+                Console.WriteLine(fileDataToWrite);
                 var filePath = Path.Combine(directory, file);
                 File.WriteAllText(filePath, fileDataToWrite);
                 result =
