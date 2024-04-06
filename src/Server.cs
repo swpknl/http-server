@@ -35,10 +35,9 @@ void AcceptClient(IAsyncResult ar, string[] args)
 
     if (data.StartsWith("/file"))
     {
-        Console.WriteLine("In file");
+        Console.WriteLine(request);
         var directoryInfo = new DirectoryInfo(directory);
         var file = data.Split("/");
-        Console.WriteLine(request);
     }
     else if (data.StartsWith("/echo"))
     {
