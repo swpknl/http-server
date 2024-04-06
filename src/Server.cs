@@ -69,25 +69,16 @@ void AcceptClient(IAsyncResult ar, string[] args)
                 var file = data.Replace("/files/", string.Empty);
                 var fileDataToWrite = request.Split("\r\n").Last();
                 var directoryInfo = new DirectoryInfo(directory);
-                if (directoryInfo.Exists)
-                {
-                    var filePath = Path.Combine(directory, file);
-                    var fileData = File.ReadAllText(filePath);
-                    result =
-                        $"HTTP/1.1 201 Created\r\n";
-                }
-                else
-                {
-                    Directory.CreateDirectory(directory);
-                    var filePath = Path.Combine(directory, file);
-                    File.WriteAllText(filePath, fileDataToWrite);
-                    result =
-                        $"HTTP/1.1 201 Created\r\n";
-                }
+                var filePath = Path.Combine(directory, file);
+                var fileData = File.ReadAllText(filePath);
+                result =
+                    $"HTTP/1.1 201 Created\r\n";
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
+                result =
+                    $"HTTP/1.1 201 Created\r\n";
             }
         }
     }
