@@ -14,11 +14,11 @@ TcpListener server = new TcpListener(IPAddress.Any, 4221);
 server.Start();
 while (true)
 {
-    server.BeginAcceptSocket(ar => AcceptClient(ar), server); // wait for client    
+    server.BeginAcceptSocket(ar => AcceptClient(ar, args), server); // wait for client    
 }
 
 
-void AcceptClient(IAsyncResult ar)
+void AcceptClient(IAsyncResult ar, string[] args)
 {
     var buffer = new byte[1024];
     var listener = (TcpListener)ar.AsyncState;
@@ -27,7 +27,20 @@ void AcceptClient(IAsyncResult ar)
     var request = Encoding.UTF8.GetString(buffer);
     var data = request.Split(" ")[1];
     string result = string.Empty;
-    if (data.StartsWith("/echo"))
+    string directory = "";
+    if (args != null && args.Length == 1)
+    {
+        directory = args[0];
+    }
+
+    if (!string.IsNullOrWhiteSpace(directory))
+    {
+        Console.WriteLine("In file");
+        var directoryInfo = new DirectoryInfo(directory);
+        var file = data.Split("/");
+        Console.WriteLine(request);
+    }
+    else if (data.StartsWith("/echo"))
     {
         Console.WriteLine("in echo");
         var echoed = data.Replace("/echo/", string.Empty);
