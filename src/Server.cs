@@ -36,8 +36,18 @@ void AcceptClient(IAsyncResult ar, string[] args)
     if (data.StartsWith("/file"))
     {
         Console.WriteLine(request);
-        var directoryInfo = new DirectoryInfo(directory);
-        var file = data.Split("/");
+        var file = data.Replace("/file/", string.Empty);
+        var filePath = Path.Combine(directory, file);
+        try
+        {
+            var fileInfo = new FileInfo(filePath);
+            var fileData = File.ReadAllText(fileInfo.FullName);
+            result = $"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileData.Length}\r\n\r\n{fileData}";
+        }
+        catch (Exception e)
+        {
+            result = "HTTP/1.1 404 OK\r\n\r\n";
+        }
     }
     else if (data.StartsWith("/echo"))
     {
