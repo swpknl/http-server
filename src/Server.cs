@@ -55,7 +55,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         }
         catch (Exception e)
         {
-            Console.WriteLine("In exception");
+            Console.WriteLine(e);
             var echoed = "test";
             result = $"HTTP/1.1 404 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
         }
