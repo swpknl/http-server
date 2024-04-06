@@ -64,25 +64,32 @@ void AcceptClient(IAsyncResult ar, string[] args)
         }
         else
         {
-            var file = data.Replace("/files/", string.Empty);
-            var fileDataToWrite = request.Split("\r\n").Last();
-            var directoryInfo = new DirectoryInfo(directory);
-            if (directoryInfo.Exists)
+            try
             {
-                var filePath = Path.Combine(directory, file);
-                var fileInfo = new FileInfo(filePath);
-                var fileData = File.ReadAllText(fileInfo.FullName);
-                result =
-                    $"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileData.Length}\r\n\r\n{fileData}";
+                var file = data.Replace("/files/", string.Empty);
+                var fileDataToWrite = request.Split("\r\n").Last();
+                var directoryInfo = new DirectoryInfo(directory);
+                if (directoryInfo.Exists)
+                {
+                    var filePath = Path.Combine(directory, file);
+                    var fileInfo = new FileInfo(filePath);
+                    var fileData = File.ReadAllText(fileInfo.FullName);
+                    result =
+                        $"HTTP/1.1 201 Created\r\n";
+                }
+                else
+                {
+                    Directory.CreateDirectory(directory);
+                    var filePath = Path.Combine(directory, file);
+                    var fileInfo = new FileInfo(filePath);
+                    File.WriteAllText(fileInfo.FullName, fileDataToWrite);
+                    result =
+                        $"HTTP/1.1 201 Created\r\n";
+                }
             }
-            else
+            catch (Exception e)
             {
-                Directory.CreateDirectory(directory);
-                var filePath = Path.Combine(directory, file);
-                var fileInfo = new FileInfo(filePath);
-                File.WriteAllText(fileInfo.FullName, fileDataToWrite);
-                result =
-                    $"HTTP/1.1 201 Created\r\n";
+                Console.WriteLine(e);
             }
         }
     }
