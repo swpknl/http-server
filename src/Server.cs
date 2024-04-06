@@ -64,13 +64,12 @@ void AcceptClient(IAsyncResult ar, string[] args)
         }
         else
         {
-                var file = data.Replace("/files/", string.Empty);
-                var fileDataToWrite = request.Split("\r\n").Last();
-                Console.WriteLine(fileDataToWrite);
-                var filePath = Path.Combine(directory, file);
-                File.WriteAllText(filePath, fileDataToWrite);
-                result =
-                    $"HTTP/1.1 201 Created\r\n";
+            Console.WriteLine("In post");
+            var file = data.Replace("/files/", string.Empty);
+            var fileDataToWrite = request.Split("\r\n").Last();
+            File.WriteAllText(Path.Combine(directory, file), fileDataToWrite);
+            result =
+                $"HTTP/1.1 201 Created\r\n\r\n";
         }
     }
     else if (data.StartsWith("/echo"))
