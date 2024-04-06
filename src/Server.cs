@@ -19,7 +19,7 @@ if (data.StartsWith("/echo"))
 {
     Console.WriteLine("in echo");
     var echoed = data.Replace("/echo/", string.Empty);
-    result = $"HTTP/1.1 200 OK\r\n\r\nContent-Type: text/plain\r\n\r\nContent-Length: {echoed.Length}\r\n\r\n\r\n\r\n{echoed}";
+    result = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
 }
 else
 {
