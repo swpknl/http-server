@@ -67,7 +67,6 @@ void AcceptClient(IAsyncResult ar, string[] args)
         {
             string requestBody = request.Split("\r\n\r\n")[1].TrimEnd();
             requestBody = requestBody.Replace("\0", string.Empty);
-            requestBody = RemoveBom(requestBody);
             Console.WriteLine(requestBody);
             string filename = data.Split("/files/")[1];
             var file = Path.Combine(directory, filename);
@@ -77,7 +76,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
                 Console.WriteLine("File Exists");
                 File.Delete(fileInfo.FullName);
             }
-            File.WriteAllText(fileInfo.FullName, requestBody, Encoding.UTF8);
+            File.WriteAllBytes(fileInfo.FullName, Encoding.UTF8.GetBytes(requestBody));
             //File.WriteAllBytes(Path.Combine(directory, file), Encoding.UTF8.GetBytes(fileDataToWrite));
             result =
                 $"HTTP/1.1 201 Created\r\n\r\n";
