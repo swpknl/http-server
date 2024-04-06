@@ -26,7 +26,7 @@ if (data.StartsWith("/echo"))
 else if (data.StartsWith("/user"))
 {
     var userAgent = request.Split("\r\n")[2];
-    var userAgentValue = userAgent.Split(":")[1];
+    var userAgentValue = userAgent.Split(":")[1].TrimStart();
     result = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {userAgentValue.Length}\r\n\r\n{userAgentValue}";
 }
 else
