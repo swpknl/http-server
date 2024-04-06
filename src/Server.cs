@@ -33,7 +33,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         directory = args[0];
     }
 
-    if (!string.IsNullOrWhiteSpace(directory))
+    if (data.StartsWith("/file"))
     {
         Console.WriteLine("In file");
         var directoryInfo = new DirectoryInfo(directory);
