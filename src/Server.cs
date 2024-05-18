@@ -54,14 +54,14 @@ void AcceptClient(IAsyncResult ar, string[] args)
                 else
                 {
                     var echoed = "test";
-                    result = $"HTTP/1.1 404 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+                    result = $"HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
                 var echoed = "test";
-                result = $"HTTP/1.1 404 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+                result = $"HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
             }
         }
         else
