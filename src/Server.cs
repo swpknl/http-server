@@ -26,7 +26,8 @@ void AcceptClient(IAsyncResult ar, string[] args)
     var socket = listener.EndAcceptSocket(ar);
     var received = socket.Receive(buffer);
     var request = Encoding.UTF8.GetString(buffer);
-    var data = request.Split(" ")[1];
+    var array = request.Split(" ");
+    var data = array[1];
     string result = string.Empty;
     string directory = "";
     if (args != null && args.Length == 2)
@@ -86,7 +87,17 @@ void AcceptClient(IAsyncResult ar, string[] args)
     {
         Console.WriteLine("in echo");
         var echoed = data.Replace("/echo/", string.Empty);
-        result = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+        var encodingHeader = string.Empty;
+        if (array.Any(x => x.Contains("accept-encoding")))
+        {
+            var compression = array.First(x => x.ToLower().Contains("accept-encoding"));
+            var compressionValue = compression.ToLower().Replace("accept-encoding: ", string.Empty);
+            if (compressionValue == "gzip")
+            {
+                encodingHeader = $"\r\nContent-Encoding: {compressionValue}";
+            }
+        }
+        result = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
     }
     else if (data.StartsWith("/user"))
     {
