@@ -16,7 +16,8 @@ TcpListener server = new TcpListener(IPAddress.Any, 4221);
 server.Start();
 while (true)
 {
-    server.BeginAcceptSocket(ar => AcceptClient(ar, args), server); // wait for client    
+    //server.BeginAcceptTcpClient(ar => AcceptClient(ar, args), server); // wait for client    
+    server.BeginAcceptSocket(ar => AcceptClient(ar, args), server);
 }
 
 
@@ -24,6 +25,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
 {
     var buffer = new byte[1024];
     var listener = (TcpListener)ar.AsyncState;
+    //var tcpCLient = listener.EndAcceptTcpClient(ar);
     var socket = listener.EndAcceptSocket(ar);
     var received = socket.Receive(buffer);
     var request = Encoding.UTF8.GetString(buffer);
@@ -96,8 +98,31 @@ void AcceptClient(IAsyncResult ar, string[] args)
             if (compressionValue.Any(x => x.Contains("gzip")))
             {
                 encodingHeader = $"Content-Encoding: gzip";
-                var compressed = BitConverter.ToString(Compress(echoed));
-                result = $"HTTP/1.1 200 OK\r\n{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {compressed.Length}\r\n\r\n{compressed}";
+                using (MemoryStream memoryStream = new MemoryStream())
+                {
+                    using (GZipStream gzip =
+                           new GZipStream(memoryStream, CompressionMode.Compress, true))
+                    {
+                        byte[] bytesArray = Encoding.UTF8.GetBytes(echoed);
+                        gzip.Write(bytesArray, 0, bytesArray.Length);
+                    }
+
+                    // Get the gzip compressed data
+                    byte[] gzipData = memoryStream.ToArray();
+                    // Calculate the length of the gzip-encoded data
+                    int gzipDataLength = gzipData.Length;
+                    // Add headers for gzip encoding and content length
+                    var response = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {gzipDataLength}\r\n";
+                    byte[] headerBytes =
+                        Encoding.ASCII.GetBytes(response);
+                    var stream = new NetworkStream(socket);
+                    stream.Write(headerBytes, 0, headerBytes.Length);
+                    stream.Write(gzipData, 0, gzipData.Length);
+                    stream.Flush();
+                    stream.Close();
+                    stream.Socket.Close();
+                    return;
+                }
             }
             else
             {
