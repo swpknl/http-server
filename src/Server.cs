@@ -108,7 +108,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         {
             result = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
         }
-        
+
     }
     else if (data.StartsWith("/user"))
     {
@@ -142,29 +142,33 @@ string RemoveBom(string p)
     return p.Replace("\0", "");
 }
 
-static byte[] Compress(string info)
+static byte[] Compress(string echoData)
 {
-    byte[] data = Encoding.UTF8.GetBytes(info);
-    Console.WriteLine($"word to compress: {info}");
-    MemoryStream compressedBody = new MemoryStream();
-    GZipStream compressor =
-        new GZipStream(compressedBody, CompressionMode.Compress);
-    compressor.Write(data, 0, data.Length);
-    compressor.Flush();
-    compressor.Close();
-    return compressedBody.ToArray();
+    using (MemoryStream ms = new MemoryStream())
+    {
+        using (GZipStream gzip =
+               new GZipStream(ms, CompressionMode.Compress, true))
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(echoData);
+            gzip.Write(bytes, 0, bytes.Length);
+        }
+
+        // Get the gzip compressed data
+        byte[] gzipData = ms.ToArray();
+        return gzipData;
+    }
 }
 
 static byte[] CompressCore(string info)
-{
-    // Compressing the body
-    byte[] data = Encoding.UTF8.GetBytes(info);
-    Console.WriteLine($"word to compress: {info}");
-    MemoryStream compressedBody = new MemoryStream();
-    GZipStream compressor =
-        new GZipStream(compressedBody, CompressionMode.Compress);
-    compressor.Write(data, 0, data.Length);
-    compressor.Flush();
-    compressor.Close();
-    return compressedBody.ToArray();
-}
+    {
+        // Compressing the body
+        byte[] data = Encoding.UTF8.GetBytes(info);
+        Console.WriteLine($"word to compress: {info}");
+        MemoryStream compressedBody = new MemoryStream();
+        GZipStream compressor =
+            new GZipStream(compressedBody, CompressionMode.Compress);
+        compressor.Write(data, 0, data.Length);
+        compressor.Flush();
+        compressor.Close();
+        return compressedBody.ToArray();
+    }
