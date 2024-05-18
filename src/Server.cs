@@ -142,24 +142,29 @@ string RemoveBom(string p)
     return p.Replace("\0", "");
 }
 
-static string Compress(string input)
+static byte[] Compress(string info)
 {
-    byte[] compressed = CompressCore(input);
-    return Convert.ToHexString(compressed);
+    byte[] data = Encoding.UTF8.GetBytes(info);
+    Console.WriteLine($"word to compress: {info}");
+    MemoryStream compressedBody = new MemoryStream();
+    GZipStream compressor =
+        new GZipStream(compressedBody, CompressionMode.Compress);
+    compressor.Write(data, 0, data.Length);
+    compressor.Flush();
+    compressor.Close();
+    return compressedBody.ToArray();
 }
 
-static byte[] CompressCore(string input)
+static byte[] CompressCore(string info)
 {
-    using (MemoryStream ms = new MemoryStream())
-    {
-        using (GZipStream gzip =
-               new GZipStream(ms, CompressionMode.Compress, true))
-        {
-            byte[] bytes = Encoding.UTF8.GetBytes(input);
-            gzip.Write(bytes, 0, bytes.Length);
-        }
-
-        byte[] gzipData = ms.ToArray();
-        return gzipData;
-    }
+    // Compressing the body
+    byte[] data = Encoding.UTF8.GetBytes(info);
+    Console.WriteLine($"word to compress: {info}");
+    MemoryStream compressedBody = new MemoryStream();
+    GZipStream compressor =
+        new GZipStream(compressedBody, CompressionMode.Compress);
+    compressor.Write(data, 0, data.Length);
+    compressor.Flush();
+    compressor.Close();
+    return compressedBody.ToArray();
 }
