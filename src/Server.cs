@@ -112,16 +112,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
                     // Calculate the length of the gzip-encoded data
                     int gzipDataLength = gzipData.Length;
                     // Add headers for gzip encoding and content length
-                    var response = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {gzipDataLength}\r\n";
-                    byte[] headerBytes =
-                        Encoding.ASCII.GetBytes(response);
-                    var stream = new NetworkStream(socket);
-                    stream.Write(headerBytes, 0, headerBytes.Length);
-                    stream.Write(gzipData, 0, gzipData.Length);
-                    stream.Flush();
-                    stream.Close();
-                    stream.Socket.Close();
-                    return;
+                    result = $"HTTP/1.1 200 OK\r\n{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {gzipDataLength}\r\n\r\n{BitConverter.ToString(gzipData)}";
                 }
             }
             else
