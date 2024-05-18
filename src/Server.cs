@@ -88,41 +88,20 @@ void AcceptClient(IAsyncResult ar, string[] args)
     }
     else if (data.StartsWith("/echo"))
     {
-        Console.WriteLine("in echo");
         var echoed = data.Replace("/echo/", string.Empty);
-        var encodingHeader = string.Empty;
-        if (array.Any(x => x.ToLower().Contains("accept-encoding")))
-        {
-            var compression = array.First(x => x.ToLower().Contains("accept-encoding"));
-            var compressionValue = compression.ToLower().Replace("accept-encoding: ", string.Empty).Split(" ");
-            if (compressionValue.Any(x => x.Contains("gzip")))
-            {
-                encodingHeader = $"Content-Encoding: gzip";
-                using (MemoryStream memoryStream = new MemoryStream())
-                {
-                    using (GZipStream gzip =
-                           new GZipStream(memoryStream, CompressionMode.Compress, true))
-                    {
-                        byte[] bytesArray = Encoding.UTF8.GetBytes(echoed);
-                        gzip.Write(bytesArray, 0, bytesArray.Length);
-                    }
+        var acceptEncodingHeader = array.FirstOrDefault(x => x.ToLower().Contains("accept-encoding"));
 
-                    // Get the gzip compressed data
-                    byte[] gzipData = memoryStream.ToArray();
-                    // Calculate the length of the gzip-encoded data
-                    int gzipDataLength = gzipData.Length;
-                    // Add headers for gzip encoding and content length
-                    result = $"HTTP/1.1 200 OK\r\n{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {gzipDataLength}\r\n\r\n{BitConverter.ToString(gzipData)}";
-                }
-            }
-            else
-            {
-                result = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
-            }
+        if (acceptEncodingHeader != null && acceptEncodingHeader.ToLower().Contains("gzip"))
+        {
+            var compressedData = Compress(echoed);
+            result = $"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {compressedData.Length}\r\n\r\n";
+            socket.Send(Encoding.UTF8.GetBytes(result));
+            socket.Send(compressedData);
         }
         else
         {
-            result = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+            result = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+            socket.Send(Encoding.UTF8.GetBytes(result));
         }
 
     }
@@ -150,41 +129,16 @@ void AcceptClient(IAsyncResult ar, string[] args)
     Console.ReadLine();
 }
 
-string RemoveBom(string p)
-{
-    string BOMMarkUtf8 = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
-    if (p.StartsWith(BOMMarkUtf8, StringComparison.Ordinal))
-        p = p.Remove(0, BOMMarkUtf8.Length);
-    return p.Replace("\0", "");
-}
-
-static byte[] Compress(string echoData)
+static byte[] Compress(string data)
 {
     using (MemoryStream ms = new MemoryStream())
     {
-        using (GZipStream gzip =
-               new GZipStream(ms, CompressionMode.Compress, true))
+        using (GZipStream gzip = new GZipStream(ms, CompressionMode.Compress, true))
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(echoData);
+            byte[] bytes = Encoding.UTF8.GetBytes(data);
             gzip.Write(bytes, 0, bytes.Length);
         }
 
-        // Get the gzip compressed data
-        byte[] gzipData = ms.ToArray();
-        return gzipData;
+        return ms.ToArray();
     }
 }
-
-static byte[] CompressCore(string info)
-    {
-        // Compressing the body
-        byte[] data = Encoding.UTF8.GetBytes(info);
-        Console.WriteLine($"word to compress: {info}");
-        MemoryStream compressedBody = new MemoryStream();
-        GZipStream compressor =
-            new GZipStream(compressedBody, CompressionMode.Compress);
-        compressor.Write(data, 0, data.Length);
-        compressor.Flush();
-        compressor.Close();
-        return compressedBody.ToArray();
-    }
