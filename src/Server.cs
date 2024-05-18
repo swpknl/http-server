@@ -113,7 +113,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         }
         else
         {
-            result = "HTTP/1.1 404 OK\r\n\r\n";
+            result = "HTTP/1.1 404 Not Found\r\n\r\n";
         }
     }
 
