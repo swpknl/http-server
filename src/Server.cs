@@ -145,7 +145,7 @@ string RemoveBom(string p)
 static string Compress(string input)
 {
     byte[] compressed = CompressCore(input);
-    return Convert.ToBase64String(compressed);
+    return Convert.ToHexString(compressed);
 }
 
 static byte[] CompressCore(string input)
