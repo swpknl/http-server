@@ -1,121 +1,174 @@
+using System;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Linq;
-using System.IO;
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-Console.WriteLine("Logs from your program will appear here!");
-
-// Uncomment this block to pass the first stage
-
-TcpListener server = new TcpListener(IPAddress.Any, 4221);
-server.Start();
-while (true)
+class HttpServer
 {
-    server.BeginAcceptSocket(ar => AcceptClient(ar, args), server); // wait for client    
-}
+    private const int BufferSize = 1024;
+    private const int Port = 4221;
 
-
-void AcceptClient(IAsyncResult ar, string[] args)
-{
-    var buffer = new byte[1024];
-    var listener = (TcpListener)ar.AsyncState;
-    var socket = listener.EndAcceptSocket(ar);
-    var received = socket.Receive(buffer);
-    var request = Encoding.UTF8.GetString(buffer);
-    var data = request.Split(" ")[1];
-    string result = string.Empty;
-    string directory = "";
-    if (args != null && args.Length == 2)
+    public static void Main(string[] args)
     {
-        directory = args[1];
+        Console.WriteLine("Logs from your program will appear here!");
+
+        TcpListener server = new TcpListener(IPAddress.Any, Port);
+        server.Start();
+        while (true)
+        {
+            server.BeginAcceptSocket(AcceptClientCallback, new object[] { server, args });
+        }
     }
 
-    if (data.StartsWith("/file"))
+    private static void AcceptClientCallback(IAsyncResult ar)
     {
-        if (request.StartsWith("GET"))
+        object[] state = (object[])ar.AsyncState;
+        TcpListener listener = (TcpListener)state[0];
+        string[] args = (string[])state[1];
+
+        using (Socket socket = listener.EndAcceptSocket(ar))
         {
-            Console.WriteLine(directory);
-            var file = data.Replace("/files/", string.Empty);
-            try
+            byte[] buffer = new byte[BufferSize];
+            int received = socket.Receive(buffer);
+            string request = Encoding.UTF8.GetString(buffer, 0, received);
+            string response = HandleRequest(request, args, out byte[] compressed);
+
+            byte[] responseBytes = Encoding.UTF8.GetBytes(response);
+            socket.Send(responseBytes);
+            if (compressed != null)
             {
-                var directoryInfo = new DirectoryInfo(directory);
-                if (directoryInfo.Exists)
-                {
-                    var filePath = Path.Combine(directory, file);
-                    var fileInfo = new FileInfo(filePath);
-                    var fileData = File.ReadAllText(fileInfo.FullName);
-                    result = $"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileData.Length}\r\n\r\n{fileData}";
-                }
-                else
-                {
-                    var echoed = "test";
-                    result = $"HTTP/1.1 404 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                var echoed = "test";
-                result = $"HTTP/1.1 404 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+                socket.Send(compressed);
             }
         }
-        else
+    }
+
+    private static string HandleRequest(string request, string[] args, out byte[] compressed)
+    {
+        string[] requestLines = request.Split(new[] { "\r\n" }, StringSplitOptions.None);
+        string[] requestLine = requestLines[0].Split(' ');
+        string method = requestLine[0];
+        string url = requestLine[1];
+        string directory = args.Length == 2 ? args[1] : string.Empty;
+        compressed = null;
+
+        if (url.StartsWith("/files"))
         {
-            string requestBody = request.Split("\r\n\r\n")[1].TrimEnd();
-            requestBody = requestBody.Replace("\0", string.Empty);
-            Console.WriteLine(requestBody);
-            string filename = data.Split("/files/")[1];
-            var file = Path.Combine(directory, filename);
-            var fileInfo = new FileInfo(file);
-            if (fileInfo.Exists)
+            return HandleFileRequest(method, url, request, directory);
+        }
+        if (url.StartsWith("/echo"))
+        {
+            return HandleEchoRequest(url, requestLines, out compressed);
+        }
+        if (url.StartsWith("/user"))
+        {
+            return HandleUserRequest(requestLines);
+        }
+        return HandleDefaultRequest(url);
+    }
+
+    private static string HandleFileRequest(string method, string url, string request, string directory)
+    {
+        string filePath = Path.Combine(directory, url.Replace("/files/", string.Empty));
+
+        if (method == "GET")
+        {
+            return HandleFileGet(filePath);
+        }
+        if (method == "POST")
+        {
+            string requestBody = request.Split(new[] { "\r\n\r\n" }, StringSplitOptions.None)[1].TrimEnd('\0');
+            return HandleFilePost(filePath, requestBody);
+        }
+
+        return "HTTP/1.1 405 Method Not Allowed\r\n\r\n";
+    }
+
+    private static string HandleFileGet(string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath))
             {
-                Console.WriteLine("File Exists");
-                File.Delete(fileInfo.FullName);
+                string fileData = File.ReadAllText(filePath);
+                return $"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {fileData.Length}\r\n\r\n{fileData}";
             }
-            File.WriteAllBytes(fileInfo.FullName, Encoding.UTF8.GetBytes(requestBody));
-            //File.WriteAllBytes(Path.Combine(directory, file), Encoding.UTF8.GetBytes(fileDataToWrite));
-            result =
-                $"HTTP/1.1 201 Created\r\n\r\n";
         }
-    }
-    else if (data.StartsWith("/echo"))
-    {
-        Console.WriteLine("in echo");
-        var echoed = data.Replace("/echo/", string.Empty);
-        result = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
-    }
-    else if (data.StartsWith("/user"))
-    {
-        var userAgent = request.Split("\r\n")[2];
-        var userAgentValue = userAgent.Split(":")[1].TrimStart();
-        result = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {userAgentValue.Length}\r\n\r\n{userAgentValue}";
-    }
-    else
-    {
-        if (data.Length == 1 && data == "/")
+        catch (Exception e)
         {
-            result = "HTTP/1.1 200 OK\r\n\r\n";
+            Console.WriteLine(e);
         }
-        else
+        string notFoundMessage = "File not found";
+        return $"HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: {notFoundMessage.Length}\r\n\r\n{notFoundMessage}";
+    }
+
+    private static string HandleFilePost(string filePath, string requestBody)
+    {
+        try
         {
-            result = "HTTP/1.1 404 OK\r\n\r\n";
+            File.WriteAllText(filePath, requestBody);
+            return "HTTP/1.1 201 Created\r\n\r\n";
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return "HTTP/1.1 500 Internal Server Error\r\n\r\n";
         }
     }
 
-    var bytes = Encoding.UTF8.GetBytes(result);
-    socket.Send(bytes);
-    //server.EndAcceptSocket(ar);
-    Console.ReadLine();
-}
+    private static string HandleEchoRequest(string url, string[] requestLines, out byte[] compressedResponse)
+    {
+        string echoed = url.Replace("/echo/", string.Empty);
+        string acceptEncodingHeader = requestLines.FirstOrDefault(x => x.StartsWith("Accept-Encoding:", StringComparison.OrdinalIgnoreCase));
+        compressedResponse = null;
 
-string RemoveBom(string p)
-{
-    string BOMMarkUtf8 = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
-    if (p.StartsWith(BOMMarkUtf8, StringComparison.Ordinal))
-        p = p.Remove(0, BOMMarkUtf8.Length);
-    return p.Replace("\0", "");
+        if (acceptEncodingHeader != null && acceptEncodingHeader.Contains("gzip", StringComparison.OrdinalIgnoreCase))
+        {
+            byte[] compressedData = Compress(echoed);
+            compressedResponse = compressedData;
+            return
+                $"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {compressedData.Length}\r\n\r\n";
+        }
+
+        return $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+    }
+
+    private static string HandleUserRequest(string[] requestLines)
+    {
+        string userAgentHeader = requestLines.FirstOrDefault(x => x.StartsWith("User-Agent:", StringComparison.OrdinalIgnoreCase));
+        if (userAgentHeader != null)
+        {
+            string userAgent = userAgentHeader.Split(':')[1].Trim();
+            return $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {userAgent.Length}\r\n\r\n{userAgent}";
+        }
+
+        return "HTTP/1.1 400 Bad Request\r\n\r\n";
+    }
+
+    private static string HandleDefaultRequest(string url)
+    {
+        if (url == "/")
+        {
+            return "HTTP/1.1 200 OK\r\n\r\n";
+        }
+
+        return "HTTP/1.1 404 Not Found\r\n\r\n";
+    }
+
+    private static byte[] Compress(string data)
+    {
+        using (MemoryStream ms = new MemoryStream())
+        {
+            using (GZipStream gzip = new GZipStream(ms, CompressionMode.Compress, true))
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(data);
+                gzip.Write(bytes, 0, bytes.Length);
+            }
+
+            return ms.ToArray();
+        }
+    }
 }
