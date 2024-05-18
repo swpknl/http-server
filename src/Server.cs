@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.IO;
+using System.IO.Compression;
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
@@ -95,9 +96,19 @@ void AcceptClient(IAsyncResult ar, string[] args)
             if (compressionValue.Any(x => x.Contains("gzip")))
             {
                 encodingHeader = $"\r\nContent-Encoding: gzip";
+                var compressed = Compress(echoed);
+                result = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {compressed.Length}\r\n\r\n{compressed}";
+            }
+            else
+            {
+                result = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
             }
         }
-        result = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+        else
+        {
+            result = $"HTTP/1.1 200 OK{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
+        }
+        
     }
     else if (data.StartsWith("/user"))
     {
@@ -129,4 +140,29 @@ string RemoveBom(string p)
     if (p.StartsWith(BOMMarkUtf8, StringComparison.Ordinal))
         p = p.Remove(0, BOMMarkUtf8.Length);
     return p.Replace("\0", "");
+}
+
+static string Compress(string input)
+{
+    byte[] encoded = Encoding.UTF8.GetBytes(input);
+    byte[] compressed = CompressCore(encoded);
+    return Convert.ToBase64String(compressed);
+}
+
+static byte[] CompressCore(byte[] input)
+{
+    using (var result = new MemoryStream())
+    {
+        var lengthBytes = BitConverter.GetBytes(input.Length);
+        result.Write(lengthBytes, 0, 4);
+
+        using (var compressionStream = new GZipStream(result,
+                   CompressionMode.Compress))
+        {
+            compressionStream.Write(input, 0, input.Length);
+            compressionStream.Flush();
+
+        }
+        return result.ToArray();
+    }
 }
