@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 
 class HttpServer
@@ -34,20 +35,25 @@ class HttpServer
             byte[] buffer = new byte[BufferSize];
             int received = socket.Receive(buffer);
             string request = Encoding.UTF8.GetString(buffer, 0, received);
-            string response = HandleRequest(request, args);
+            string response = HandleRequest(request, args, out byte[] compressed));
 
             byte[] responseBytes = Encoding.UTF8.GetBytes(response);
             socket.Send(responseBytes);
+            if (compressed != null)
+            {
+                socket.Send(compressed);
+            }
         }
     }
 
-    private static string HandleRequest(string request, string[] args)
+    private static string HandleRequest(string request, string[] args, out byte[] compressed)
     {
         string[] requestLines = request.Split(new[] { "\r\n" }, StringSplitOptions.None);
         string[] requestLine = requestLines[0].Split(' ');
         string method = requestLine[0];
         string url = requestLine[1];
         string directory = args.Length == 2 ? args[1] : string.Empty;
+        compressed = null;
 
         if (url.StartsWith("/files"))
         {
@@ -55,7 +61,7 @@ class HttpServer
         }
         if (url.StartsWith("/echo"))
         {
-            return HandleEchoRequest(url, requestLines);
+            return HandleEchoRequest(url, requestLines, out compressed);
         }
         if (url.StartsWith("/user"))
         {
@@ -113,7 +119,7 @@ class HttpServer
         }
     }
 
-    private static string HandleEchoRequest(string url, string[] requestLines)
+    private static string HandleEchoRequest(string url, string[] requestLines, out byte[] compressedResponse)
     {
         string echoed = url.Replace("/echo/", string.Empty);
         string acceptEncodingHeader = requestLines.FirstOrDefault(x => x.StartsWith("Accept-Encoding:", StringComparison.OrdinalIgnoreCase));
@@ -121,7 +127,9 @@ class HttpServer
         if (acceptEncodingHeader != null && acceptEncodingHeader.Contains("gzip", StringComparison.OrdinalIgnoreCase))
         {
             byte[] compressedData = Compress(echoed);
-            return $"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {compressedData.Length}\r\n\r\n" + Encoding.UTF8.GetString(compressedData);
+            compressedResponse = compressedData;
+            return
+                $"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {compressedData.Length}\r\n\r\n";
         }
 
         return $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
