@@ -26,8 +26,8 @@ void AcceptClient(IAsyncResult ar, string[] args)
     var socket = listener.EndAcceptSocket(ar);
     var received = socket.Receive(buffer);
     var request = Encoding.UTF8.GetString(buffer);
-    var array = request.Split(" ");
-    var data = array[1];
+    var array = request.Split("\r\n");
+    var data = array[0].Split(" ")[1];
     string result = string.Empty;
     string directory = "";
     if (args != null && args.Length == 2)
@@ -88,7 +88,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
         Console.WriteLine("in echo");
         var echoed = data.Replace("/echo/", string.Empty);
         var encodingHeader = string.Empty;
-        if (array.Any(x => x.Contains("accept-encoding")))
+        if (array.Any(x => x.ToLower().Contains("accept-encoding")))
         {
             var compression = array.First(x => x.ToLower().Contains("accept-encoding"));
             var compressionValue = compression.ToLower().Replace("accept-encoding: ", string.Empty);
