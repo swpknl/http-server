@@ -144,25 +144,22 @@ string RemoveBom(string p)
 
 static string Compress(string input)
 {
-    byte[] encoded = Encoding.UTF8.GetBytes(input);
-    byte[] compressed = CompressCore(encoded);
+    byte[] compressed = CompressCore(input);
     return Convert.ToBase64String(compressed);
 }
 
-static byte[] CompressCore(byte[] input)
+static byte[] CompressCore(string input)
 {
-    using (var result = new MemoryStream())
+    using (MemoryStream ms = new MemoryStream())
     {
-        var lengthBytes = BitConverter.GetBytes(input.Length);
-        result.Write(lengthBytes, 0, 4);
-
-        using (var compressionStream = new GZipStream(result,
-                   CompressionMode.Compress))
+        using (GZipStream gzip =
+               new GZipStream(ms, CompressionMode.Compress, true))
         {
-            compressionStream.Write(input, 0, input.Length);
-            compressionStream.Flush();
-
+            byte[] bytes = Encoding.UTF8.GetBytes(input);
+            gzip.Write(bytes, 0, bytes.Length);
         }
-        return result.ToArray();
+
+        byte[] gzipData = ms.ToArray();
+        return gzipData;
     }
 }
