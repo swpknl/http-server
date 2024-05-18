@@ -96,7 +96,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
             if (compressionValue.Any(x => x.Contains("gzip")))
             {
                 encodingHeader = $"Content-Encoding: gzip";
-                var compressed = Encoding.UTF8.GetString(Compress(echoed));
+                var compressed = BitConverter.ToString(Compress(echoed));
                 result = $"HTTP/1.1 200 OK\r\n{encodingHeader}\r\nContent-Type: text/plain\r\nContent-Length: {compressed.Length}\r\n\r\n{compressed}";
             }
             else
