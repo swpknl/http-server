@@ -27,7 +27,7 @@ void AcceptClient(IAsyncResult ar, string[] args)
     var received = socket.Receive(buffer);
     var request = Encoding.UTF8.GetString(buffer);
     var array = request.Split("\r\n");
-    var data = array[0].Split(" ")[1];
+    var data = request.Split(" ")[1];
     string result = string.Empty;
     string directory = "";
     if (args != null && args.Length == 2)
