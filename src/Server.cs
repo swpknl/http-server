@@ -35,7 +35,7 @@ class HttpServer
             byte[] buffer = new byte[BufferSize];
             int received = socket.Receive(buffer);
             string request = Encoding.UTF8.GetString(buffer, 0, received);
-            string response = HandleRequest(request, args, out byte[] compressed));
+            string response = HandleRequest(request, args, out byte[] compressed);
 
             byte[] responseBytes = Encoding.UTF8.GetBytes(response);
             socket.Send(responseBytes);
@@ -123,6 +123,7 @@ class HttpServer
     {
         string echoed = url.Replace("/echo/", string.Empty);
         string acceptEncodingHeader = requestLines.FirstOrDefault(x => x.StartsWith("Accept-Encoding:", StringComparison.OrdinalIgnoreCase));
+        compressedResponse = null;
 
         if (acceptEncodingHeader != null && acceptEncodingHeader.Contains("gzip", StringComparison.OrdinalIgnoreCase))
         {
