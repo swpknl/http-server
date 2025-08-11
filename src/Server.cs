@@ -30,7 +30,6 @@ class HttpServer
         TcpListener listener = (TcpListener)state[0];
         string[] args = (string[])state[1];
         
-        Console.WriteLine($"args: {string.Join(", ", args)}");
         bool shouldClose = false;
         using (Socket socket = listener.EndAcceptSocket(ar))
         {
@@ -44,14 +43,14 @@ class HttpServer
                 }
 
                 string request = Encoding.UTF8.GetString(buffer, 0, received);
-                string response = HandleRequest(request, args, out byte[] compressed);
-
                 // Check for Connection header
                 shouldClose = request.IndexOf("Connection: close", StringComparison.OrdinalIgnoreCase) >= 0;
+                string response = HandleRequest(request, args, shouldClose, out byte[] compressed);
 
                 byte[] responseBytes = Encoding.UTF8.GetBytes(response);
                 socket.Send(responseBytes);
-                if (compressed != null)
+                
+                if (compressed?.Length > 0)
                 {
                     socket.Send(compressed);
                 }
@@ -64,7 +63,7 @@ class HttpServer
         }
     }
 
-    private static string HandleRequest(string request, string[] args, out byte[] compressed)
+    private static string HandleRequest(string request, string[] args, bool shouldClose, out byte[] compressed)
     {
         string[] requestLines = request.Split(new[] { "\r\n" }, StringSplitOptions.None);
         string[] requestLine = requestLines[0].Split(' ');
@@ -83,9 +82,9 @@ class HttpServer
         }
         if (url.StartsWith("/user"))
         {
-            return HandleUserRequest(requestLines);
+            return HandleUserRequest(requestLines, shouldClose);
         }
-        return HandleDefaultRequest(url);
+        return HandleDefaultRequest(url, shouldClose);
     }
 
     private static string HandleFileRequest(string method, string url, string request, string directory)
@@ -154,22 +153,30 @@ class HttpServer
         return $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {echoed.Length}\r\n\r\n{echoed}";
     }
 
-    private static string HandleUserRequest(string[] requestLines)
+    private static string HandleUserRequest(string[] requestLines, bool shouldClose)
     {
         string userAgentHeader = requestLines.FirstOrDefault(x => x.StartsWith("User-Agent:", StringComparison.OrdinalIgnoreCase));
         if (userAgentHeader != null)
         {
             string userAgent = userAgentHeader.Split(':')[1].Trim();
+            if (shouldClose)
+            {
+                return $"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: {userAgent.Length}\r\n\r\n{userAgent}";    
+            }
             return $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {userAgent.Length}\r\n\r\n{userAgent}";
         }
 
         return "HTTP/1.1 400 Bad Request\r\n\r\n";
     }
 
-    private static string HandleDefaultRequest(string url)
+    private static string HandleDefaultRequest(string url, bool shouldClose)
     {
         if (url == "/")
         {
+            if (shouldClose)
+            {
+                return "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n";
+            }
             return "HTTP/1.1 200 OK\r\n\r\n";
         }
 
