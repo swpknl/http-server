@@ -29,19 +29,37 @@ class HttpServer
         object[] state = (object[])ar.AsyncState;
         TcpListener listener = (TcpListener)state[0];
         string[] args = (string[])state[1];
-
+        
+        Console.WriteLine($"args: {string.Join(", ", args)}");
+        bool shouldClose = false;
         using (Socket socket = listener.EndAcceptSocket(ar))
         {
-            byte[] buffer = new byte[BufferSize];
-            int received = socket.Receive(buffer);
-            string request = Encoding.UTF8.GetString(buffer, 0, received);
-            string response = HandleRequest(request, args, out byte[] compressed);
-
-            byte[] responseBytes = Encoding.UTF8.GetBytes(response);
-            socket.Send(responseBytes);
-            if (compressed != null)
+            while (!shouldClose)
             {
-                socket.Send(compressed);
+                byte[] buffer = new byte[BufferSize];
+                int received = socket.Receive(buffer);
+                if (received == 0)
+                {
+                    return;
+                }
+
+                string request = Encoding.UTF8.GetString(buffer, 0, received);
+                string response = HandleRequest(request, args, out byte[] compressed);
+
+                // Check for Connection header
+                shouldClose = request.IndexOf("Connection: close", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                byte[] responseBytes = Encoding.UTF8.GetBytes(response);
+                socket.Send(responseBytes);
+                if (compressed != null)
+                {
+                    socket.Send(compressed);
+                }
+            
+                if (shouldClose)
+                {
+                    break;
+                }    
             }
         }
     }
